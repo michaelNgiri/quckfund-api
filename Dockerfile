@@ -20,6 +20,8 @@ RUN npx prisma generate
 # Build the TypeScript project. This creates the /dist folder.
 RUN npx nest build
 
+RUN npx prisma db seed
+
 # --- DEBUGGING ---
 # List the contents of the current directory to verify that 'dist' exists.
 RUN ls -la
