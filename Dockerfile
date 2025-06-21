@@ -2,6 +2,7 @@
 FROM node:20-alpine
 
 # Set the working directory
+# Invalidate cache: 1
 WORKDIR /usr/src/app
 
 # Copy package files first to leverage Docker's layer caching
@@ -18,6 +19,10 @@ RUN npx prisma generate
 
 # Build the TypeScript project. This creates the /dist folder.
 RUN npx nest build
+
+# --- DEBUGGING ---
+# List the contents of the current directory to verify that 'dist' exists.
+RUN ls -la
 
 # After building, prune the dev dependencies to keep the final image smaller
 RUN npm prune --omit=dev
