@@ -1,16 +1,14 @@
+# Use Node.js 20 to match NestJS v11 dependencies
 FROM node:20-alpine
 
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Set the NODE_ENV to production
-ENV NODE_ENV=production
-
 # Copy package files first to leverage Docker's layer caching
 COPY package*.json ./
 
-# Install ALL dependencies (dev dependencies are needed for 'prisma generate' and 'nest build')
-RUN npm install
+# Explicitly tell npm to install ALL dependencies, including dev, for the build
+RUN npm install --include=dev
 
 # Copy the rest of the application source code
 COPY . .
@@ -19,11 +17,13 @@ COPY . .
 RUN npx prisma generate
 
 # Build the TypeScript project. This creates the /dist folder.
-RUN npm run build
+RUN npx nest build
 
-# Expose the port the app runs on (Render will use this automatically)
+# After building, prune the dev dependencies to keep the final image smaller
+RUN npm prune --omit=dev
+
+# Expose the port the app runs on
 EXPOSE 5007
 
 # The command that will be run when the container starts.
-# Render's "Start Command" setting ('npm run start:prod') will run this.
 CMD ["npm", "run", "start:prod"]
