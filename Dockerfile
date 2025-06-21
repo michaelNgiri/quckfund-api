@@ -1,13 +1,15 @@
-# -----------------
-# STAGE 1: Builder
-# -----------------
-# This stage installs all dependencies (including dev) and builds the app.
-FROM node:18-alpine AS builder
+FROM node:20-alpine
 
+# Set the working directory
 WORKDIR /usr/src/app
 
-# Copy package files and install all dependencies needed for the build
+# Set the NODE_ENV to production
+ENV NODE_ENV=production
+
+# Copy package files first to leverage Docker's layer caching
 COPY package*.json ./
+
+# Install ALL dependencies (dev dependencies are needed for 'prisma generate' and 'nest build')
 RUN npm install
 
 # Copy the rest of the application source code
@@ -19,25 +21,9 @@ RUN npx prisma generate
 # Build the TypeScript project. This creates the /dist folder.
 RUN npm run build
 
-
-# -----------------
-# STAGE 2: Production
-# -----------------
-# This is the final, lightweight image that will be deployed.
-FROM node:18-alpine AS production
-
-WORKDIR /usr/src/app
-
-ENV NODE_ENV=production
-
-# Copy package files and install ONLY production dependencies
-COPY package*.json ./
-RUN npm install --omit=dev --ignore-scripts
-
-# Copy the essential built artifacts from the 'builder' stage
-COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/prisma ./prisma
+# Expose the port the app runs on (Render will use this automatically)
+EXPOSE 5007
 
 # The command that will be run when the container starts.
-# Render's "Start Command" setting will use this or override it.
+# Render's "Start Command" setting ('npm run start:prod') will run this.
 CMD ["npm", "run", "start:prod"]
