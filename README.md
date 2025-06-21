@@ -1,97 +1,151 @@
+
+QuickFund API
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+<a href="https://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="NestJS Logo" /></a>
+<br />
+The backend API for the QuickFund micro-lending platform.
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This service provides a scalable, secure, and efficient backend for the QuickFund application. It handles user authentication, loan processing, admin functionalities, and asynchronous notifications.
 
+This API is designed to be deployed as a containerized service and connects to a PostgreSQL database and a Redis instance in production.
 
+🔗 Frontend Repository: https://github.com/michaelngiri/quickfund-ui
 
+Tech Stack
 
-# QuickFund Backend Service
+Framework: NestJS
 
-This directory contains the backend API for the QuickFund application, built with NestJS.
+Language: TypeScript
 
-## Tech Stack
-- **Framework:** NestJS
-- **Language:** TypeScript
-- **ORM:** Prisma
-- **Database:** SQLite (for local development)
+ORM: Prisma
 
----
+Databases:
 
-## Setup and Installation
+PostgreSQL (Production)
 
-### 1. Install Dependencies
+SQLite (Local Development)
 
-1. Navigate to this directory and run:
+Queues: BullMQ with Redis
+
+Authentication: JWT (JSON Web Tokens)
+
+Containerization: Docker
+
+Local Development Setup
+
+Follow these steps to run the backend service on your local machine. This setup uses SQLite for the database and Redis via Docker for the queues.
+
+Prerequisites
+
+Node.js (v20 or higher)
+
+npm or yarn
+
+Docker Desktop (must be running)
+
+1. Install Dependencies
+
+Navigate to the quickfund-backend directory and install the required packages:
+
 
 npm install
 
-2. Configure Environment Variables
+2. Start Dependent Services (Redis)
 
-Create a .env file in this directory (quickfund-backend/.env). Copy the following configuration:
+This project requires a Redis instance for its job queue system. The included docker-compose.yml file makes this easy.
 
-Generated dotenv
-# Application Port
+In a separate terminal, from the quickfund-backend directory, run:
+
+
+docker-compose up -d
+
+This will start a Redis container in the background.
+
+3. Configure Local Environment
+
+Create a .env file in the root of the quickfund-backend directory. This file configures the application to use a local SQLite database.
+
+
+# .env
+
+# --- Application ---
 PORT=5007
+FRONTEND_URL=http://localhost:3000
 
-# URL of the frontend for CORS
-FRONTEND_URL=http://localhost:3001
-
-# Database Connection (SQLite)
+# --- Database (SQLite for local development) ---
 DATABASE_URL="file:./dev.db"
 
-# JWT Secret Key (replace with a long, random string in production)
-JWT_SECRET=a-very-long-and-random-secret-for-development
+# --- Queues (Connects to local Docker Redis) ---
+REDIS_URL=redis://localhost:6379
 
-3. Run Database Migrations and Seeding
+# --- Security ---
+JWT_SECRET=a-super-secret-key-for-local-development-only
 
-This step will create your local SQLite database file and populate it with test users.
+4. Configure Prisma for SQLite
+
+For local development, your prisma/schema.prisma file must be configured to use the sqlite provider.
 
 
-# Apply database schema changes
-npx prisma migrate dev
+// prisma/schema.prisma
 
-# Populate the database with initial data
+datasource db {
+  provider = "sqlite" // Ensure this is set for local development
+  url      = env("DATABASE_URL")
+}
+
+5. Create and Seed the Local Database
+
+Run the following commands to create the dev.db SQLite file, apply all migrations, and populate it with test users.
+
+
+# Create the database and apply the initial migration
+npx prisma migrate dev --name init-local
+
+# Seed the database with test accounts
 npx prisma db seed
 
-4. Run the Development Server
+
+Note: The migrate dev command is for the initial setup. For subsequent schema changes, you can run it again with a new migration name.
+
+6. Run the Application
+
+Finally, start the NestJS development server in watch mode.
+
 
 npm run start:dev
 
-The backend API will now be running on http://localhost:5007.
+The backend API will now be running at http://localhost:5007 and connected to your local services.
+
+Production Deployment
+
+The production environment on Render.com uses a different setup:
+
+Database: The provider in prisma/schema.prisma is set to "postgresql".
+
+Migrations: A separate migration history for PostgreSQL exists in the repository for production deployment.
+
+Environment Variables: The DATABASE_URL and REDIS_URL on Render use the Internal Connection Strings provided by the platform for performance and security.
+
+Startup Command: The service uses npm run start:prod, which first runs npx prisma migrate deploy to apply migrations before starting the server.
 
 Test Accounts
 
-The database seed script creates the following users for easy testing:
+The seed script creates the following users, available in both local and production environments after seeding:
 
 Role	Email	Password
 Admin	admin@quickfund.com	adminpassword
-Regular User	user@quickfund.com	userpassword
+User	user@quickfund.com	userpassword
 
-The regular user also has one "PENDING" loan application created by default.
+The user@quickfund.com account will have one "PENDING" loan application by default.
 
 Available Scripts
 
-npm run start:dev: Runs the app in watch mode.
+npm run start:dev: Runs the app in watch mode for local development.
 
-npm run build: Builds the application for production.
+npm run build: Compiles the TypeScript source code into JavaScript for production.
 
-npm run lint: Lints the codebase.
+npm run start:prod: Runs migrations and starts the production server (for deployment).
+
+npm run lint: Lints the codebase for style and error checking.
