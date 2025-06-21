@@ -11,5 +11,4 @@ export class AppService {
       message: 'Welcome to the QuickFund API! Please see the documentation for available endpoints.',
     };
   }
-
 }

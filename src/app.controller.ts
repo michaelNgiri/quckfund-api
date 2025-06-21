@@ -9,5 +9,4 @@ export class AppController {
   getApiStatus() {
     return this.appService.getApiStatus();
   }
-
 }
