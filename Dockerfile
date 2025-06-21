@@ -1,28 +1,43 @@
-# ---- Base Node ----
-    FROM node:18-alpine AS base
-    WORKDIR /usr/src/app
-    
-    # ---- Dependencies ----
-    FROM base AS dependencies
-    COPY package*.json ./
-    RUN npm install --omit=dev
-    
-    # ---- Build ----
-    FROM base AS builder
-    COPY . .
-    RUN npm install
-    RUN npx prisma generate
-    RUN npm run build
-    
-    # ---- Production ----
-    FROM base AS production
-    ENV NODE_ENV=production
-    COPY --from=dependencies /usr/src/app/node_modules ./node_modules
-    COPY --from=builder /usr/src/app/dist ./dist
-    COPY --from=builder /usr/src/app/prisma ./prisma
-    COPY --from=builder /usr/src/app/package.json ./package.json
-    
-    # The prisma migrate command needs to be run in the deployed environment
-    # CMD ["npx", "prisma", "migrate", "deploy", "&&", "node", "dist/main"]
-    # For simplicity in this challenge, we'll just run the app. The migration is assumed to be run manually or by a separate process.
-    CMD ["node", "dist/main"]
+# -----------------
+# STAGE 1: Builder
+# -----------------
+# This stage installs all dependencies (including dev) and builds the app.
+FROM node:18-alpine AS builder
+
+WORKDIR /usr/src/app
+
+# Copy package files and install all dependencies needed for the build
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of the application source code
+COPY . .
+
+# Generate the Prisma Client
+RUN npx prisma generate
+
+# Build the TypeScript project. This creates the /dist folder.
+RUN npm run build
+
+
+# -----------------
+# STAGE 2: Production
+# -----------------
+# This is the final, lightweight image that will be deployed.
+FROM node:18-alpine AS production
+
+WORKDIR /usr/src/app
+
+ENV NODE_ENV=production
+
+# Copy package files and install ONLY production dependencies
+COPY package*.json ./
+RUN npm install --omit=dev --ignore-scripts
+
+# Copy the essential built artifacts from the 'builder' stage
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/prisma ./prisma
+
+# The command that will be run when the container starts.
+# Render's "Start Command" setting will use this or override it.
+CMD ["npm", "run", "start:prod"]
